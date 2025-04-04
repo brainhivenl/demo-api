@@ -1,0 +1,33 @@
+apiVersion: skaffold/v3
+kind: Config
+build:
+  artifacts:
+    - image: support
+      bazel:
+        target: //:image.tar
+  local:
+    concurrency: 1
+manifests:
+  helm:
+    releases:
+      - name: support
+        chartPath: helm/support
+        namespace: support
+        skipBuildDependencies: true
+        setValueTemplates:
+          imageSupport: "{{.IMAGE_FULLY_QUALIFIED_support}}"
+
+deploy:
+  helm: { }
+  statusCheckDeadlineSeconds: 300
+
+profiles:
+  - name: prod
+    requiresAllActivations: false
+    deploy:
+      kubeContext: gke_brainhive-prod_europe-west4_brainhive-prod
+    patches:
+      - op: add
+        path: /manifests/helm/releases/0/valuesFiles
+        value:
+          - helm/support/values-prod.yaml
